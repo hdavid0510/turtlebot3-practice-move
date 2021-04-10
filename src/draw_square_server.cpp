@@ -8,8 +8,8 @@
 
 
 // 기본 속도; 너무 빠르면 전진 거리/회전 각도가 부정확해진다.
-const double speed = 2;
-const double angular_speed = 2;
+const double speed = 0.5;
+const double angular_speed = 0.5;
 const int polygon = 4;
 
 // Turtlebot3 Limitations

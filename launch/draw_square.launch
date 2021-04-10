@@ -19,7 +19,7 @@
 	</node>
 
 	<node name="draw_sqare_server" pkg = "turtlebot3_practice_move" type="draw_square_server" output = "screen" respawn="true" />
-	<node name="draw_sqare_client" pkg = "turtlebot3_practice_move" type="draw_square_client" output = "screen" />
+	<node name="draw_sqare_client" pkg = "turtlebot3_practice_move" type="draw_square_client" output = "screen" respawn="true" />
 	
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find turtlebot3_fake)/rviz/turtlebot3_fake.rviz"/>
 </launch>
