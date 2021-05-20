@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   # turtlebot3_fakes
   turtlebot3_bringup
   message_generation
+  nav_msgs
 )
 
 ## System dependencies are found with CMake's conventions
