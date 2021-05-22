@@ -6,12 +6,12 @@
 #include <tf/tf.h>
 
 // srv폴더에 만든 서비스 파일에서 생성되는 헤더파일로 catkin_make 실행 중 생성된다.
-#include "turtlebot3_practice_move/square.h"
+#include "turtlebot3_practice_move/draw_polygon.h"
 
 // 기본 속도; 너무 빠르면 전진 거리/회전 각도가 부정확해진다.
 const double default_forward_speed = 0.75;
 const double default_angular_speed = 0.5;
-const int polygon = 4;
+// const int polygonNumber = 4;
 const double default_angular_smooth_angle = 30 * M_PI / 180;
 
 // Turtlebot3 Limitations
@@ -34,9 +34,9 @@ ros::Subscriber sub_tb3_odom;
 nav_msgs::Odometry::ConstPtr tb3_odom;
 
 // 그리기 옵션들
-float side_length = 0;
-int32_t rotations = 0;
+float sideLength = 0;
 int currentDrawingLine = -1; // 현재 그리고 있는 사각형 몇 개 선분 완성됐는지, -1이면 쉬고 있는 상태
+int32_t polygonNumber = 4;
 bool isTurning = false;		 // 사각형 그리는 중, 현재 회전중인지
 double initPositionX = 0;
 double initPositionY = 0;
@@ -189,19 +189,19 @@ void stop(geometry_msgs::Twist &vel_msg, ros::Publisher &pub)
 }
 
 // 사각형 그리기 서비스 Request에 응답하는 Callback 함수
-bool handlesquare(turtlebot3_practice_move::square::Request &req, turtlebot3_practice_move::square::Response &res)
+bool handleRequestDraw(turtlebot3_practice_move::draw_polygon::Request &req, turtlebot3_practice_move::draw_polygon::Response &res)
 {
 	//TODO: 이미 그리고 있는데 그리기 명령이 들어오는 것 처리하기
 
-	ROS_INFO("[draw_square_server] I just got incoming request!");
+	ROS_INFO("[draw_polygon_server] I just got incoming request!");
 
 	// service client로부터 요청된 변 길이 받아오기
-	side_length = req.sidelength;
-	ROS_INFO_STREAM("[draw_square_server] req.sidelength=" << req.sidelength);
+	sideLength = req.sidelength;
+	ROS_INFO_STREAM("[draw_polygon_server] req.sidelength=" << req.sidelength);
 
 	// service client로부터 요청된 반복 회수 받아오기
-	rotations = req.rotations;
-	ROS_INFO_STREAM("[draw_square_server] req.rotations=" << req.rotations);
+	polygonNumber = req.angles;
+	ROS_INFO_STREAM("[draw_polygon_server] req.angles=" << req.angles);
 
 	// 그리기 시작
 	currentDrawingLine = 0;
@@ -220,16 +220,16 @@ void tb3_odom_callback(const nav_msgs::Odometry::ConstPtr &msg)
 int main(int argc, char **argv)
 {
 	// 노드/노드핸들 초기화
-	ros::init(argc, argv, "draw_square_server");
+	ros::init(argc, argv, "draw_polygon_server");
 	ros::NodeHandle nh;
-	ROS_INFO("[draw_square_server] Startup");
+	ROS_INFO("[draw_polygon_server] Startup");
 
 	// 노드 반복 실행(spin) 주기 설정(ms)
 	ros::Rate loop_rate(10);
 
 	// 퍼블리셔 실행 (turtlesim 조종용 토픽 퍼블리시)
 	pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 10);
-	ROS_INFO("[draw_square_server] Advertising publisher /cmd_vel");
+	ROS_INFO("[draw_polygon_server] Advertising publisher /cmd_vel");
 
 	sub_tb3_odom = nh.subscribe("odom", 1000, tb3_odom_callback);
 
@@ -239,8 +239,8 @@ int main(int argc, char **argv)
 	nh.param<std::string>("model", turtlebot3_model, "burger");
 
 	// 서비스 서버 실행 (그릴 사각형 크기와 반복회수 받는 서비스 서버)
-	ros::ServiceServer s = nh.advertiseService<turtlebot3_practice_move::square::Request, turtlebot3_practice_move::square::Response>("draw_square", handlesquare);
-	ROS_INFO("[draw_square_server] Advertising service server draw_square");
+	ros::ServiceServer s = nh.advertiseService<turtlebot3_practice_move::draw_polygon::Request, turtlebot3_practice_move::draw_polygon::Response>("draw_polygon", handleRequestDraw);
+	ROS_INFO("[draw_polygon_server] Advertising service server draw_polygon");
 
 	// vel_msg 메시지 객체 생성
 	geometry_msgs::Twist vel_msg;
@@ -252,14 +252,14 @@ int main(int argc, char **argv)
 		// 콜백함수 대기 등
 		ros::spinOnce();
 
-		if (0 <= currentDrawingLine && currentDrawingLine < polygon)
+		if (0 <= currentDrawingLine && currentDrawingLine < polygonNumber)
 		{
 			if (isTurning)
 			{
 				// 회전중
 				double roll, pitch, yaw;
 				getAngleFromOdom(tb3_odom, roll, pitch, yaw);
-				if ((currentDrawingLine >= polygon - 1) && (boundAngle(yaw) < M_PI)) // 마지막 선분
+				if ((currentDrawingLine >= polygonNumber - 1) && (boundAngle(yaw) < M_PI)) // 마지막 선분
 				{
 					//회전 종료
 					stop(vel_msg, pub);
@@ -269,7 +269,7 @@ int main(int argc, char **argv)
 					currentDrawingLine = -1;
 					stop(vel_msg, pub);
 				}
-				else if (boundAngle(yaw) >= (currentDrawingLine + 1) * (M_PI * 2 / polygon))// 마지막이 아닌 선분
+				else if (boundAngle(yaw) >= (currentDrawingLine + 1) * (M_PI * 2 / polygonNumber))// 마지막이 아닌 선분
 				{
 					//회전 종료
 					stop(vel_msg, pub);
@@ -281,21 +281,17 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					rotate(vel_msg, pub, smoothAngularSpeed((currentDrawingLine + 1) * (M_PI * 2 / polygon), boundAngle(yaw), default_angular_smooth_angle, default_angular_speed));
+					rotate(vel_msg, pub, smoothAngularSpeed((currentDrawingLine + 1) * (M_PI * 2 / polygonNumber), boundAngle(yaw), default_angular_smooth_angle, default_angular_speed));
 				}
 			}
 			else
 			{
 				// 직진중
-				if (pointDistance(initPositionX, initPositionY, tb3_odom->pose.pose.position.x, tb3_odom->pose.pose.position.y) >= side_length)
+				if (pointDistance(initPositionX, initPositionY, tb3_odom->pose.pose.position.x, tb3_odom->pose.pose.position.y) >= sideLength)
 				{
 					//직진 종료
 					stop(vel_msg, pub);
 					isTurning = true;
-					//회전 시작점 저장
-					// double roll, pitch, yaw;
-					// getAngleFromOdom(tb3_odom, roll, pitch, yaw);
-					// initRotationZ = yaw;
 				}
 				else
 				{

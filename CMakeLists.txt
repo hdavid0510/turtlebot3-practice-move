@@ -61,6 +61,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   square.srv
+  draw_polygon.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -162,6 +163,20 @@ add_executable(${PROJECT_NAME}_draw_square_client src/draw_square_client.cpp)
 set_target_properties(${PROJECT_NAME}_draw_square_client PROPERTIES OUTPUT_NAME draw_square_client PREFIX "")
 add_dependencies(${PROJECT_NAME}_draw_square_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}_draw_square_client
+  ${catkin_LIBRARIES}
+)
+
+add_executable(${PROJECT_NAME}_draw_polygon_server src/draw_polygon_server.cpp)
+set_target_properties(${PROJECT_NAME}_draw_polygon_server PROPERTIES OUTPUT_NAME draw_polygon_server PREFIX "")
+add_dependencies(${PROJECT_NAME}_draw_polygon_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(${PROJECT_NAME}_draw_polygon_server
+  ${catkin_LIBRARIES}
+)
+
+add_executable(${PROJECT_NAME}_draw_polygon_client src/draw_polygon_client.cpp)
+set_target_properties(${PROJECT_NAME}_draw_polygon_client PROPERTIES OUTPUT_NAME draw_polygon_client PREFIX "")
+add_dependencies(${PROJECT_NAME}_draw_polygon_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(${PROJECT_NAME}_draw_polygon_client
   ${catkin_LIBRARIES}
 )
 
